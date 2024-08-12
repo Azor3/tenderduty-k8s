@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenderduty-deploy
+  labels:
+    app: tenderduty
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tenderduty
+  template:
+    metadata:
+      labels:
+        app: tenderduty
+    spec:
+      initContainers:
+        - name: init-config
+          image: busybox
+          command: ['sh', '-c', 'sed -e "s|api_key: \"TG Api\"|api_key: \"$TOKEN\"|g" -e "s|channel: \"TG Channel\"|channel: \"$CHANNEL\"|g" -e "s|valoper_address: VALOPER|valoper_address: $VALOPER|g" tempconfig.yaml > config.yaml']
+          volumeMounts:
+            - name: config-volume
+              mountPath: /var/lib/tenderduty/config.yaml
+            - name: config-template-volume
+              mountPath: /var/lib/tenderduty/tempconfig.yaml
+          env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tg-secrets
+                  key: TOKEN
+            - name: CHANNEL
+              valueFrom:
+                secretKeyRef:
+                  name: tg-secrets
+                  key: CHANNEL
+            - name: VALOPER
+              valueFrom:
+                secretKeyRef:
+                  name: tg-secrets
+                  key: VALOPER
+      containers:
+        - name: tenderdutycont
+          image: ghcr.io/blockpane/tenderduty:latest
+          volumeMounts:
+            - name: config-volume
+              mountPath: /var/lib/tenderduty/config.yaml
+              subPath: config.yaml
+          ports:
+            - name: tenderduty-port
+              containerPort: 3306
+              containerPort: 88888
+      volumes:
+        - name: config-volume
+          emptyDir: {}
+        - name: config-template-volume
+          configMap:
+            name: tenderduty-config
