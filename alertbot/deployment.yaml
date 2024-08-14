@@ -5,7 +5,7 @@ metadata:
   labels:
     app: tenderduty
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: tenderduty
@@ -17,12 +17,12 @@ spec:
       initContainers:
         - name: init-config
           image: busybox
-          command: ['sh', '-c', 'sed -e "s|api_key: \"TG Api\"|api_key: \"$TOKEN\"|g" -e "s|channel: \"TG Channel\"|channel: \"$CHANNEL\"|g" -e "s|valoper_address: VALOPER|valoper_address: $VALOPER|g" tempconfig.yaml > config.yaml']
+          command: ['sh', '-c', 'sed -e "s|api_key: \"TG Api\"|api_key: \"$TOKEN\"|g" -e "s|channel: \"TG Channel\"|channel: \"$CHANNEL\"|g" -e "s|valoper_address: VALOPER|valoper_address: $VALOPER|g" /var/lib/tenderduty/tempconfig/tempconfig.yaml > /var/lib/tenderduty/config.yml']
           volumeMounts:
             - name: config-volume
-              mountPath: /var/lib/tenderduty/config.yaml
+              mountPath: /var/lib/tenderduty/
             - name: config-template-volume
-              mountPath: /var/lib/tenderduty/tempconfig.yaml
+              mountPath: /var/lib/tenderduty/tempconfig/
           env:
             - name: TOKEN
               valueFrom:
@@ -44,12 +44,12 @@ spec:
           image: ghcr.io/blockpane/tenderduty:latest
           volumeMounts:
             - name: config-volume
-              mountPath: /var/lib/tenderduty/config.yaml
-              subPath: config.yaml
+              mountPath: /var/lib/tenderduty/
           ports:
             - name: tenderduty-port
-              containerPort: 3306
-              containerPort: 88888
+              containerPort: 8888
+            - name: tender-port2
+              containerPort: 28686
       volumes:
         - name: config-volume
           emptyDir: {}
